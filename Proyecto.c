@@ -36,10 +36,9 @@ y finalmente se devuelve el puntero a la tabla hash creada
 */
 
 static tablaHash* crearTablaHash(int nbuckets) {
-    tablaHash* tabla = (tablaHash*)malloc(sizeof(tablaHash));
+    tablaHash* tabla = malloc(sizeof(tablaHash));
     tabla -> nbuckets = nbuckets;
-    tabla -> buckets = (nodoHash**)malloc(sizeof(nodoHash*) * nbuckets);
-    memset(tabla -> buckets, 0, sizeof(nodoHash*) * nbuckets);
+    tabla -> buckets = calloc(nbuckets, sizeof(nodoHash*));
     return tabla;
 }
 
@@ -50,7 +49,7 @@ llama a liberarValor(actual->valor) para liberar la memoria del valor.
 Luego se libera el array de cubetas y finalmente la estructura de la tabla hash.
 */
 
-static liberarTablaHash(tablaHash* tabla, void (*liberarValor)(void *)) {
+static void liberarTablaHash(tablaHash* tabla, void (*liberarValor)(void *)) {
     for(int i = 0; i < tabla -> nbuckets; i++) {
         nodoHash* actual = tabla -> buckets[i];
         while(actual) {
