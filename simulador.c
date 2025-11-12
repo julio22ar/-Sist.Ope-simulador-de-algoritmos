@@ -156,19 +156,40 @@ static void eliminarTH(tablaHash *tabla, int llave) {
 }
 
 /*
-Estructuras LRU
-*/
+ * Estructura: nodoLRU
+ * ---------------------------------
+ * Representa un nodo en la lista doblemente enlazada utilizada por la caché LRU.
+ * Cada nodo contiene:
+ *   - `pagina`: número de página almacenada.
+ *   - `siguiente` y `anterior`: punteros para recorrer la lista.
+ */
 
 typedef struct nodoLRU {
     int pagina;
     struct nodoLRU *siguiente, *anterior;
 } nodoLRU;
 
+/*
+ * Estructura: cacheLRU
+ * ---------------------------------
+ * Representa la caché LRU completa, que incluye:
+ *   - `capacidad`: número máximo de páginas que puede almacenar.
+ *   - `tamano`: número actual de páginas cargadas.
+ *   - `cabeza` y `cola`: punteros al nodo más y menos recientemente usado.
+ *   - `mapa`: tabla hash para acceso rápido a las páginas.
+ */
+
 typedef struct cacheLRU {
     int capacidad, tamano;
     nodoLRU *cabeza, *cola;
     tablaHash *mapa;
 } cacheLRU;
+
+/*
+ * crearCacheLRU()
+ * ---------------------------------
+ * Crea e inicializa una nueva caché LRU con la capacidad indicada.
+ */
 
 static cacheLRU* crearCacheLRU(int capacidad) {
     cacheLRU* cache = malloc(sizeof(cacheLRU));
@@ -179,6 +200,14 @@ static cacheLRU* crearCacheLRU(int capacidad) {
     return cache;
 }
 
+/*
+ * removerNodoLRU()
+ * ---------------------------------
+ * Elimina un nodo de la lista doblemente enlazada (sin liberarlo).
+ * Actualiza los punteros de cabeza y cola según sea necesario.
+ */
+
+
 static void removerNodoLRU(cacheLRU *cache, nodoLRU *nodo) {
     if (!nodo) return;
     if (nodo->anterior) nodo->anterior->siguiente = nodo->siguiente;
@@ -188,6 +217,13 @@ static void removerNodoLRU(cacheLRU *cache, nodoLRU *nodo) {
 
     nodo->anterior = nodo->siguiente = NULL;   
 }
+
+/*
+ * insertarNodoLRU()
+ * ---------------------------------
+ * Inserta un nodo al frente de la lista (posición más recientemente usada).
+ */
+
 
 static void insertarNodoLRU(cacheLRU *cache, nodoLRU *nodo) {
     nodo->siguiente = cache->cabeza;
@@ -202,6 +238,11 @@ static void liberarNodoLRU(void *valor) {
         free((nodoLRU*)valor);
     }
 }
+/*
+ * destruirCacheLRU()
+ * ---------------------------------
+ * Libera todos los nodos de la lista y destruye la tabla hash asociada.
+ */
 
 static void destruirCacheLRU(cacheLRU *cache) {
     nodoLRU *actual = cache->cabeza;
@@ -213,6 +254,22 @@ static void destruirCacheLRU(cacheLRU *cache) {
     liberarTablaHash(cache->mapa, NULL);
     free(cache);
 }
+
+/*
+ * accederCacheLRU()
+ * ---------------------------------
+ * Simula el acceso a una página:
+ *   - Si la página está presente (HIT), se mueve al frente de la lista.
+ *   - Si no está (MISS), se inserta. Si la caché está llena, se elimina la cola (LRU).
+ *
+ * Parámetros:
+ *   cache  - puntero a la caché LRU.
+ *   pagina - número de página accedida.
+ *   victima - puntero para devolver la página reemplazada, si aplica.
+ *
+ * Retorna:
+ *   0 si fue HIT, 1 si fue MISS.
+ */
 
 static int accederCacheLRU(cacheLRU *cache, int pagina,  int *victima) {
     nodoLRU *nodo = (nodoLRU*) obtenerTH(cache->mapa, pagina);
